@@ -17,25 +17,26 @@ find_package(sensor_msgs REQUIRED)
 find_package(camera_calibration_parsers REQUIRED)
 find_package(camera_info_manager REQUIRED)
 
-#set(UEYE_LIBRARY_PATH /usr/lib)
+##############################################################################
+# UEye Drivers
+##############################################################################
+
+# TODO: provide a user configurable cache variable (e.g. UEYE_ROOT) to help discover
 find_library(UEYE_LIBRARY ueye_api)
-set(USE_UNOFFICIAL_UEYE_DRIVERS FALSE)
-if(NOT UEYE_LIBRARY)
-  message(STATUS "libueye_api was not found in system's library path")
+# TODO: need a find_path call for setting UEYE_INCLUDE_DIR
+if(UEYE_LIBRARY)
+  message(STATUS "Found 'official' ueye_drivers")
+else(UEYE_LIBRARY)
   #include(cmake_modules/DownloadUEyeDrivers.cmake)
   include(cmake_modules/DownloadUEyeDriversUnofficial.cmake)
-  set(UEYE_DRIVER_DIR ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION})
-  if(UEYE_DRIVER_DIR)
-    message(STATUS "Setting UEYE_DRIVER_DIR to: ${UEYE_DRIVER_DIR}")
-  else()
-    set(UEYE_DRIVER_DIR ${CMAKE_CURRENT_BINARY_DIR})
-    message(STATUS "Failed to set UEYE_DRIVER_DIR to: CATKIN_DEVEL_PREFIX/CATKIN_PACKAGE_SHARE_DESTINATION, defaulting to CMAKE_CURRENT_BINARY_DIR: ${UEYE_DRIVER_DIR}")
-  endif()
   download_ueye_drivers(UEYE_LIBRARY UEYE_INCLUDE_DIR ${UEYE_DRIVER_DIR})
-  message(STATUS "libueye_api library: ${UEYE_LIBRARY}")
-  message(STATUS "libueye_api include: ${UEYE_INCLUDE_DIR}")
-  set(USE_UNOFFICIAL_UEYE_DRIVERS TRUE)
 endif()
+message(STATUS "  UEYE_LIBRARY: ${UEYE_LIBRARY}")
+message(STATUS "  UEYE_INCLUDE_DIR: ${UEYE_INCLUDE_DIR}")
+
+##############################################################################
+# ...
+##############################################################################
 
 set(UEYECAM_NODELET_NAME ueye_cam_nodelet)
 set(UEYECAM_LIB_NAME ueye_wrapper)
@@ -83,13 +84,6 @@ ament_target_dependencies(${UEYECAM_NODELET_NAME} rclcpp image_transport sensor_
 
 add_executable(check_ueye_api src/check_ueye_api.cpp)
 target_link_libraries(check_ueye_api ${CMAKE_DL_LIBS})
-
-# Do not package the barebones IDS drivers, since they will mask over the official drivers (when present)
-#if(USE_UNOFFICIAL_UEYE_DRIVERS)
-#  get_filename_component(UNOFFICIAL_UEYE_DRIVERS_LIB_REALPATH ${UEYE_LIBRARY} REALPATH)
-#  install(FILES ${UEYE_LIBRARY} ${UNOFFICIAL_UEYE_DRIVERS_LIB_REALPATH}
-#    DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
-#endif()
 
 # Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}/
